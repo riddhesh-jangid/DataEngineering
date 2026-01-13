@@ -72,7 +72,3 @@ write_csv_landing_data('src_order_items', sources_data)
 # DBTITLE 1,JSON landing write
 write_json_landing_data('src_payments', sources_data)
 write_json_landing_data('src_shipments', sources_data)
-
-# COMMAND ----------
-
-

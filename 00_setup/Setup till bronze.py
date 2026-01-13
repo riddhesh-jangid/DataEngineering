@@ -180,7 +180,7 @@ spark.sql("DROP VOLUME IF EXISTS otc.volumn.externalfiles")
 
 # Unity Catalog target schema for Bronze (authoritative in doc)
 CATALOG = "otc"
-UC_SCHEMA = "bronze"  # DOC: bronze.<table> e.g., bronze.src_customer
+UC_SCHEMA = "bronze"  # DOC: bronze.<table> e.g.,bronze.src_customer
 
 # ADLS Gen2 base (external)
 STORAGE_ACCOUNT = "stgsourceadls"
@@ -259,8 +259,8 @@ bronze_columns_ddl = {
         order_id STRING,
         payment_ts TIMESTAMP,
         payment_status STRING,
-        amount STRING,                -- doc: STRING on purpose
-        payment_payload STRING,        -- doc: STRUCT/ARRAY; stored raw as STRING in Bronze
+        amount STRING,               -- doc: STRING on purpose
+        payment_payload STRING,       -- doc: STRUCT/ARRAY; stored raw as STRING in Bronze
         ingest_ts TIMESTAMP,
         run_date DATE,
         source_file STRING
@@ -294,7 +294,7 @@ spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{UC_SCHEMA}")
 # CREATE EXTERNAL TABLES (IDEMPOTENT)
 # ============================================================
 
-for table_name, location in table_locations.items():
+for table_name,location in table_locations.items():
     full_name = f"{CATALOG}.{UC_SCHEMA}.{table_name}"
     cols = bronze_columns_ddl[table_name].strip()
 
@@ -333,7 +333,7 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_customer',
 # MAGIC   'csv',
-# MAGIC   'customer_id STRING, full_name STRING, city STRING, updated_at TIMESTAMP, ingest_ts TIMESTAMP',
+# MAGIC   'customer_id STRING,full_name STRING,city STRING,updated_at TIMESTAMP,ingest_ts TIMESTAMP',
 # MAGIC   '{"header":"true","delimiter":",","mode":"FAILFAST"}',
 # MAGIC   '["city"]',
 # MAGIC   'customer_id',
@@ -344,7 +344,7 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_product',
 # MAGIC   'csv',
-# MAGIC   'product_id STRING, product_name STRING, category STRING, list_price DECIMAL(10,2), is_active BOOLEAN, updated_at TIMESTAMP, ingest_ts TIMESTAMP',
+# MAGIC   'product_id STRING,product_name STRING,category STRING,list_price DECIMAL(10,2),is_active BOOLEAN,updated_at TIMESTAMP,ingest_ts TIMESTAMP',
 # MAGIC   '{"header":"true","delimiter":",","mode":"FAILFAST"}',
 # MAGIC   '[]',
 # MAGIC   'product_id',
@@ -355,7 +355,7 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_orders',
 # MAGIC   'csv',
-# MAGIC   'order_id STRING, customer_id STRING, order_ts TIMESTAMP, order_status STRING, updated_at TIMESTAMP, ingest_ts TIMESTAMP',
+# MAGIC   'order_id STRING,customer_id STRING,order_ts TIMESTAMP,order_status STRING,updated_at TIMESTAMP,ingest_ts TIMESTAMP',
 # MAGIC   '{"header":"true","delimiter":",","mode":"FAILFAST"}',
 # MAGIC   '[]',
 # MAGIC   'order_id',
@@ -366,7 +366,7 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_order_items',
 # MAGIC   'csv',
-# MAGIC   'order_id STRING, order_item_id STRING, product_id STRING, quantity INT, unit_price DECIMAL(10,2), updated_at TIMESTAMP, ingest_ts TIMESTAMP',
+# MAGIC   'order_id STRING,order_item_id STRING,product_id STRING,quantity INT,unit_price DECIMAL(10,2),updated_at TIMESTAMP,ingest_ts TIMESTAMP',
 # MAGIC   '{"header":"true","delimiter":",","mode":"FAILFAST"}',
 # MAGIC   '[]',
 # MAGIC   'order_item_id',
@@ -377,8 +377,8 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_payments',
 # MAGIC   'json',
-# MAGIC   'payment_event_id STRING, order_id STRING, payment_ts TIMESTAMP, payment_status STRING, amount STRING, payment_payload STRING, ingest_ts TIMESTAMP',
-# MAGIC   '{"multiLine":"true"}',
+# MAGIC   'payment_event_id STRING,order_id STRING,payment_ts TIMESTAMP,payment_status STRING,amount STRING,payment_payload STRING,ingest_ts TIMESTAMP',
+# MAGIC   '{"multiLine":"false"}',
 # MAGIC   '[]',
 # MAGIC   'payment_event_id',
 # MAGIC   'Landing nested JSON (as-is). Amount is STRING on purpose. Bronze retains nested payload; exact struct depends on JSON. Bronze adds run_date (partition) and source_file (lineage).'
@@ -388,8 +388,8 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_shipments',
 # MAGIC   'json',
-# MAGIC   'shipment_event_id STRING, order_id STRING, shipment_ts TIMESTAMP, shipment_status STRING, ingest_ts TIMESTAMP',
-# MAGIC   '{"multiLine":"true"}',
+# MAGIC   'shipment_event_id STRING,order_id STRING,shipment_ts TIMESTAMP,shipment_status STRING,ingest_ts TIMESTAMP',
+# MAGIC   '{"multiLine":"false"}',
 # MAGIC   '[]',
 # MAGIC   'shipment_event_id',
 # MAGIC   'Landing JSON events (as-is). Bronze adds run_date (partition) and source_file (lineage).'
@@ -399,8 +399,8 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC (
 # MAGIC   'src_fx_rates',
 # MAGIC   'json',
-# MAGIC   'currency STRING, rate DECIMAL(10,4), rate_date DATE, ingest_ts TIMESTAMP',
-# MAGIC   '{"multiLine":"true"}',
+# MAGIC   'currency STRING,rate DECIMAL(10,4),rate_date DATE,ingest_ts TIMESTAMP',
+# MAGIC   '{"multiLine":"false"}',
 # MAGIC   '[]',
 # MAGIC   'currency,rate_date',
 # MAGIC   'REST API JSON (as-is). Bronze adds run_date (partition) and source_file (lineage).'
@@ -418,14 +418,134 @@ print("DONE: Bronze external Delta tables created in UC schema `bronze`.")
 # MAGIC   pipeline_run_id    STRING,
 # MAGIC   table_name         STRING,
 # MAGIC   run_date           DATE,
-# MAGIC   run_mode           STRING,        -- single | multiple
+# MAGIC   run_mode           STRING,       -- single | multiple
 # MAGIC   start_ts           TIMESTAMP,
 # MAGIC   end_ts             TIMESTAMP,
-# MAGIC   status             STRING,        -- success | failed
+# MAGIC   status             STRING,       -- success | failed
 # MAGIC   rows_read          BIGINT,
 # MAGIC   error_message      STRING
 # MAGIC )
 # MAGIC USING DELTA;
+
+# COMMAND ----------
+
+# DBTITLE 1,creating empty silver tables
+# ============================================================
+# CONFIG
+# ============================================================
+
+CATALOG = "otc"
+UC_SCHEMA = "silver"   # Managed tables under otc.silver
+
+# ============================================================
+# SILVER SCHEMAS (AUTHORITATIVE FROM DOC)
+# - Managed tables (NO explicit LOCATION)
+# - No IDENTITY columns (surrogate keys populated by ingestion logic, not table DDL)
+# ============================================================
+
+silver_columns_ddl = {
+    "customer": """
+        customer_sk BIGINT,
+        customer_id STRING,
+        full_name STRING,
+        city STRING,
+        effective_from DATE,
+        effective_to DATE,
+        is_current BOOLEAN,
+        updated_at TIMESTAMP,
+        ingest_ts TIMESTAMP
+    """,
+    "product": """
+        product_sk BIGINT,
+        product_id STRING,
+        product_name STRING,
+        category STRING,
+        list_price DECIMAL(10,2),
+        is_active BOOLEAN,
+        updated_at TIMESTAMP,
+        ingest_ts TIMESTAMP
+    """,
+    "orders": """
+        order_id STRING,
+        customer_id STRING,
+        order_ts TIMESTAMP,
+        order_status STRING,
+        updated_at TIMESTAMP,
+        ingest_ts TIMESTAMP
+    """,
+    "order_items": """
+        order_item_id STRING,
+        order_id STRING,
+        product_id STRING,
+        quantity INT,
+        unit_price DECIMAL(10,2),
+        updated_at TIMESTAMP,
+        ingest_ts TIMESTAMP
+    """,
+    "payments": """
+        payment_event_id STRING,
+        order_id STRING,
+        payment_ts TIMESTAMP,
+        payment_status STRING,
+        amount DECIMAL(10,2),
+        ingest_ts TIMESTAMP
+    """,
+    "shipments": """
+        shipment_event_id STRING,
+        order_id STRING,
+        shipment_ts TIMESTAMP,
+        shipment_status STRING,
+        ingest_ts TIMESTAMP
+    """,
+}
+
+# ============================================================
+# CREATE SCHEMA
+# ============================================================
+
+spark.sql(f"USE CATALOG {CATALOG}")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{UC_SCHEMA}")
+
+# ============================================================
+# CREATE MANAGED SILVER TABLES (IDEMPOTENT)
+# ============================================================
+
+for table_name, cols in silver_columns_ddl.items():
+    full_name = f"{CATALOG}.{UC_SCHEMA}.{table_name}"
+    cols = cols.strip()
+
+    spark.sql(f"""
+        CREATE TABLE IF NOT EXISTS {full_name} (
+            {cols}
+        )
+        USING DELTA
+    """)
+
+    print(f"OK : {full_name}")
+
+print("DONE: Silver managed Delta tables created in UC schema `silver`.")
+
+
+# COMMAND ----------
+
+# DBTITLE 1,creating watermark table
+CATALOG = "otc"
+UC_SCHEMA = "silver"   # Managed tables under otc.silver
+
+spark.sql(f"""CREATE TABLE IF NOT EXISTS {CATALOG}.{UC_SCHEMA}.watermark (
+  table_name STRING,
+  watermark_ts TIMESTAMP
+)""")
+
+spark.sql(f"""
+          MERGE INTO {CATALOG}.{UC_SCHEMA}.watermark as w
+          USING (
+            SELECT STACK(6, 'customer', 'product', 'orders', 'order_items', 'payments', 'shipments') as table_name
+            ) AS s
+            ON w.table_name = s.table_name
+            WHEN NOT MATCHED THEN 
+              INSERT (table_name, watermark_ts) VALUES (s.table_name, TIMESTAMP '1900-01-01T00:00:00.000+00:00')
+          """)
 
 # COMMAND ----------
 

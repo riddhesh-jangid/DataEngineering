@@ -237,11 +237,15 @@ def write_json_landing_data(table_name: str, sources_data: dict):
 
     dbutils.fs.mkdirs(output_path.replace("dbfs:", ""))
 
-    # convert records to JSON lines DataFrame correctly
-    json_rows = [(json.dumps(r, ensure_ascii=False),) for r in records]
-    df = spark.createDataFrame(json_rows, ["value"])
+    if table_name == 'src_payments':
+        schema = "payment_event_id STRING, order_id STRING, payment_ts STRING, payment_status STRING, amount STRING, ingest_ts STRING, payment_payload STRING" 
+    elif table_name == 'src_shipments':
+        schema = "shipment_event_id STRING, order_id STRING, shipment_ts STRING, shipment_status STRING, ingest_ts STRING"
 
-    df.coalesce(1).write.mode("append").text(output_path)
+    # convert records to JSON lines DataFrame correctly
+    df = spark.createDataFrame(records, schema=schema)
+
+    df.coalesce(1).write.mode("append").json(output_path)
 
     update_data_generation_control(table_name, last_max_id)
     return output_path
