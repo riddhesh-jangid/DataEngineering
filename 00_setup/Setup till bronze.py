@@ -549,4 +549,83 @@ spark.sql(f"""
 
 # COMMAND ----------
 
+# DBTITLE 1,creating empty gold tables
+# ============================================================
+# CONFIG
+# ============================================================
+
+CATALOG = "otc"
+UC_SCHEMA = "gold"   # Managed tables under otc.gold
+
+# ============================================================
+# GOLD SCHEMAS (AUTHORITATIVE)
+# - Managed tables (NO explicit LOCATION)
+# - Modeling-only layer (facts/dims)
+# ============================================================
+
+gold_columns_ddl = {
+    "fact_order_lifecycle": """
+        order_id STRING,
+        customer_sk BIGINT,
+        order_ts TIMESTAMP,
+        order_status STRING,
+        order_total_amount DECIMAL(12,2),
+        payment_status STRING,
+        last_payment_ts TIMESTAMP,
+        shipment_status STRING,
+        last_shipment_ts TIMESTAMP,
+        record_updated_ts TIMESTAMP
+    """
+}
+
+# ============================================================
+# CREATE SCHEMA
+# ============================================================
+
+spark.sql(f"USE CATALOG {CATALOG}")
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {CATALOG}.{UC_SCHEMA}")
+
+# ============================================================
+# CREATE MANAGED GOLD TABLES (IDEMPOTENT)
+# ============================================================
+
+for table_name, cols in gold_columns_ddl.items():
+    full_name = f"{CATALOG}.{UC_SCHEMA}.{table_name}"
+    cols = cols.strip()
+
+    spark.sql(f"""
+        CREATE TABLE IF NOT EXISTS {full_name} (
+            {cols}
+        )
+        USING DELTA
+    """)
+
+    print(f"OK : {full_name}")
+
+print("DONE: Gold managed Delta tables created in UC schema `gold`.")
+
+
+# COMMAND ----------
+
+CATALOG = "otc"
+UC_SCHEMA = "gold"   # Managed tables under otc.gold
+
+spark.sql(f"""CREATE TABLE IF NOT EXISTS {CATALOG}.{UC_SCHEMA}.watermark (
+  table_name STRING,
+  watermark_ts TIMESTAMP
+)""")
+
+spark.sql(f"""
+MERGE INTO {CATALOG}.{UC_SCHEMA}.watermark AS w
+USING (
+  SELECT 'fact_order_lifecycle' AS table_name
+) AS s
+ON w.table_name = s.table_name
+WHEN NOT MATCHED THEN
+  INSERT (table_name, watermark_ts)
+  VALUES (s.table_name, TIMESTAMP '1900-01-01T00:00:00.000+00:00')
+""")
+
+# COMMAND ----------
+
 
